@@ -10,7 +10,7 @@
  */
 export function computeStreaks(
   localDays: string[],
-  todayStr: string,
+  _todayStr: string,
   yesterdayStr: string
 ): { currentStreak: number; longestStreak: number } {
   if (localDays.length === 0) return { currentStreak: 0, longestStreak: 0 };

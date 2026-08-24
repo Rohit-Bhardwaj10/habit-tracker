@@ -22,13 +22,18 @@ declare global {
   var __prisma: PrismaClient | undefined;
 }
 
+import pg from "pg";
+const { Pool } = pg;
+
 function createPrismaClient(): PrismaClient {
   const connectionString = process.env["DATABASE_URL"];
   if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  const adapter = new PrismaPg({ connectionString });
+  // Limit pool size to avoid hitting Neon free tier limits during tests
+  const pool = new Pool({ connectionString, max: 5 });
+  const adapter = new PrismaPg(pool as any); // Type cast to avoid any @types/pg mismatch
   return new PrismaClient({ adapter });
 }
 

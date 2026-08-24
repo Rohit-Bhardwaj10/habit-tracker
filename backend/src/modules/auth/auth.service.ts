@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../middleware/errorHandler.js";
 import { isValidIANATimezone } from "../../utils/localDay.js";
@@ -17,8 +17,8 @@ function generateTokens(user: { id: string; email: string; timezone: string }) {
     timezone: user.timezone,
   };
 
-  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  const refreshToken = jwt.sign({ sub: user.id }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN });
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] });
+  const refreshToken = jwt.sign({ sub: user.id }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"] });
 
   return { accessToken, refreshToken };
 }
