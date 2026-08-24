@@ -6,7 +6,14 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import authRouter from "./modules/auth/auth.routes.js";
 import habitsRouter from "./modules/habits/habits.routes.js";
 
+import cors from "cors";
+
 const app = express();
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "*",
+  credentials: true
+}));
 
 // ── Body parsing ──────────────────────────────────────────────────────────────
 app.use(express.json());
