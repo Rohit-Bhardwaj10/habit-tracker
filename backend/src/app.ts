@@ -13,7 +13,8 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // ── API routes (added per phase) ─────────────────────────────────────────────
-// Phase 2: app.use("/api/auth",    authRouter);
+import authRouter from "./modules/auth/auth.routes.js";
+app.use("/api/auth", authRouter);
 // Phase 3: app.use("/api/habits",  habitsRouter);
 // Phase 4: app.use("/api/habits",  checkinsRouter);
 
