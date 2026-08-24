@@ -13,10 +13,10 @@ export const api = {
 };
 
 async function request(endpoint: string, options: RequestInit = {}, retries = 2): Promise<any> {
-  // Ensure url always begins with /api for the Next.js proxy
-  const url = endpoint.startsWith("/api") 
-    ? endpoint 
-    : `/api${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  const baseUrl = API_URL ? API_URL : "/api";
+  const cleanEndpoint = endpoint.startsWith("/api") ? endpoint.replace("/api", "") : endpoint;
+  const url = `${baseUrl}${cleanEndpoint.startsWith("/") ? "" : "/"}${cleanEndpoint}`;
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
