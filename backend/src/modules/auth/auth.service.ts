@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../middleware/errorHandler.js";
 import { isValidIANATimezone } from "../../utils/localDay.js";
