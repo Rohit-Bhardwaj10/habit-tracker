@@ -104,9 +104,3 @@ If a user in `Asia/Kolkata` checks in on Monday at 11 PM and Tuesday at 1 AM, on
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Design Philosophy
-
-The UI is built upon the **Antigravity** design language:
-- **Spatial Depth**: Overlapping elements with backdrop blurs and subtle drop shadows.
-- **Weightless Motion**: GSAP staggers and hover lifts (`translate-y`, `shadow` expansion).
-- **Pastel Palette**: Warm off-whites, slates, roses, teals, and ambers for a calm and focused user experience.
