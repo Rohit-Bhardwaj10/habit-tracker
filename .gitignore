@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment secrets
+.env
+
+# Prisma generated client (regenerated via `prisma generate`)
+# Keep schema.prisma; ignore generated files committed by mistake
+node_modules/.prisma/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+plan.md
+decisions.md
+changelog.md

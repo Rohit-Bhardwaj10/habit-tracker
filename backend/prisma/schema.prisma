@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Neon requires connection pooling URL for serverless environments
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Models ────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  /// IANA timezone string, e.g. "Asia/Kolkata". Used for all local-day computations.
+  timezone  String
+  createdAt DateTime @default(now())
+
+  habits Habit[]
+}
+
+model Habit {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  checkIns CheckIn[]
+}
+
+model CheckIn {
+  id        String   @id @default(uuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  /// UTC instant of the check-in — stored as-is for audit purposes.
+  checkedAt DateTime
+  /// "YYYY-MM-DD" in the user's IANA timezone — NEVER UTC date.
+  /// Lexicographic sort equals chronological sort.
+  localDay  String
+
+  /// DB-level duplicate prevention: one check-in per local day per habit.
+  @@unique([habitId, localDay])
+  @@index([habitId])
+}
