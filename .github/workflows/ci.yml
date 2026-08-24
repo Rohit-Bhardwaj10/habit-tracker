@@ -16,12 +16,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          # Glob so it works regardless of whether lock file exists yet
+          cache-dependency-path: "**/package-lock.json"
 
       - name: Install backend deps
         run: cd backend && npm ci
+
+      - name: Generate Prisma Client
+        # Prisma 7: migrate deploy no longer auto-runs generate
+        run: cd backend && npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - name: Type-check
         run: cd backend && npx tsc --noEmit
@@ -30,11 +38,13 @@ jobs:
         run: cd backend && npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - name: Run unit + integration tests
         run: cd backend && npm test
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
 
@@ -47,9 +57,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: "**/package-lock.json"
 
       - name: Install frontend deps
         run: cd frontend && npm ci
