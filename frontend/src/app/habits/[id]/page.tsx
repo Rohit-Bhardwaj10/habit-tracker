@@ -6,6 +6,7 @@ import { Activity, ArrowLeft, Flame, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HistoryCalendar from "@/components/HistoryCalendar";
+import gsap from "gsap";
 
 type HabitDetail = {
   id: string;
@@ -31,12 +32,13 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  async function fetchHabitData() {
+  async function fetchHabitData(showLoading = true) {
+    if (showLoading) setLoading(true);
     try {
       const [profileRes, habitRes, checkInsRes] = await Promise.all([
         api.get("/auth/me"),
         api.get(`/habits/${id}`),
-        api.get(`/habits/${id}/checkins?limit=365`), // Get enough history for 365-day calendar
+        api.get(`/habits/${id}/checkins?limit=365`),
       ]);
       setUserProfile(profileRes);
       setHabit(habitRes);
@@ -44,7 +46,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
     } catch (error) {
       // Errors handled by api
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
@@ -52,19 +54,29 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
     fetchHabitData();
   }, [id]);
 
+  useEffect(() => {
+    if (!loading && habit) {
+      gsap.fromTo(
+        ".detail-anim",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, stagger: 0.1, duration: 0.6, ease: "power3.out" }
+      );
+    }
+  }, [loading, habit]);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Activity className="animate-pulse text-emerald-500" size={48} />
+      <div className="min-h-screen pt-24 flex items-center justify-center bg-[var(--background)]">
+        <Activity className="animate-pulse text-rose-400 drop-shadow-[0_0_15px_rgba(244,114,182,0.5)]" size={48} />
       </div>
     );
   }
 
   if (!habit || !userProfile) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-24 flex flex-col items-center justify-center bg-[var(--background)]">
         <h2 className="text-xl font-bold text-slate-800">Habit not found</h2>
-        <Link href="/dashboard" className="text-emerald-600 hover:underline mt-2">
+        <Link href="/dashboard" className="text-rose-500 hover:text-rose-400 mt-2 transition-colors font-semibold">
           Back to Dashboard
         </Link>
       </div>
@@ -72,67 +84,63 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <Link href="/dashboard" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors">
-              <ArrowLeft size={20} />
-              Back
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen pt-24 relative bg-[var(--background)]">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 perspective-1000">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors mb-6 font-semibold">
+          <ArrowLeft size={18} />
+          Back to Dashboard
+        </Link>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-8 border-b border-slate-100">
-            <h1 className="text-3xl font-bold text-slate-900">{habit.name}</h1>
+        <div className="detail-anim glass-card rounded-3xl overflow-hidden shadow-xl shadow-slate-200/50">
+          <div className="p-8 sm:p-10 border-b border-white/40 bg-white/30">
+            <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">{habit.name}</h1>
             {habit.description && (
-              <p className="text-slate-500 mt-2 text-lg">{habit.description}</p>
+              <p className="text-slate-600 mt-3 text-lg max-w-2xl font-medium">{habit.description}</p>
             )}
 
-            <div className="flex flex-wrap gap-6 mt-8">
-              <div className="flex items-center gap-2">
-                <div className="p-3 bg-orange-100 text-orange-600 rounded-lg">
-                  <Flame size={24} className={habit.currentStreak > 0 ? "fill-orange-500" : ""} />
+            <div className="flex flex-wrap gap-4 sm:gap-6 mt-10">
+              <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-slate-200 flex-1 min-w-[200px] shadow-sm hover:-translate-y-1 transition-transform duration-300">
+                <div className="p-3 bg-amber-100 text-amber-500 rounded-xl border border-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                  <Flame size={28} className={habit.currentStreak > 0 ? "fill-amber-400" : ""} />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-500">Current Streak</div>
-                  <div className="text-2xl font-bold text-slate-900">{habit.currentStreak} days</div>
+                  <div className="text-sm font-semibold text-slate-500">Current Streak</div>
+                  <div className="text-3xl font-bold text-slate-800">{habit.currentStreak} <span className="text-lg font-medium text-slate-400">days</span></div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-                  <Trophy size={24} />
+              <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-slate-200 flex-1 min-w-[200px] shadow-sm hover:-translate-y-1 transition-transform duration-300">
+                <div className="p-3 bg-sky-100 text-sky-500 rounded-xl border border-sky-200 shadow-[0_0_15px_rgba(14,165,233,0.2)]">
+                  <Trophy size={28} />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-500">Longest Streak</div>
-                  <div className="text-2xl font-bold text-slate-900">{habit.longestStreak} days</div>
+                  <div className="text-sm font-semibold text-slate-500">Longest Streak</div>
+                  <div className="text-3xl font-bold text-slate-800">{habit.longestStreak} <span className="text-lg font-medium text-slate-400">days</span></div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="p-3 bg-emerald-100 text-emerald-600 rounded-lg">
-                  <Activity size={24} />
+              <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-slate-200 flex-1 min-w-[200px] shadow-sm hover:-translate-y-1 transition-transform duration-300">
+                <div className="p-3 bg-teal-100 text-teal-500 rounded-xl border border-teal-200 shadow-[0_0_15px_rgba(20,184,166,0.2)]">
+                  <Activity size={28} />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-500">Total Check-ins</div>
-                  <div className="text-2xl font-bold text-slate-900">{habit.totalCheckIns}</div>
+                  <div className="text-sm font-semibold text-slate-500">Total Check-ins</div>
+                  <div className="text-3xl font-bold text-slate-800">{habit.totalCheckIns}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-8 overflow-x-hidden">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Last 365 Days</h2>
+          <div className="p-8 sm:p-10 overflow-x-hidden bg-white/10">
+            <h2 className="text-2xl font-bold text-slate-800 mb-8 flex items-center gap-2">
+              Contribution History
+            </h2>
             <HistoryCalendar
               habitId={habit.id}
               createdAt={habit.createdAt}
               checkIns={checkIns}
               userTimezone={userProfile.timezone}
-              onCheckInSuccess={fetchHabitData}
+              onCheckInSuccess={() => fetchHabitData(false)}
             />
           </div>
         </div>

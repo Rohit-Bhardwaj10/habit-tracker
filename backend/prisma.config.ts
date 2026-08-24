@@ -1,4 +1,6 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ override: true });
+
 import { defineConfig, env } from "prisma/config";
 
 /**

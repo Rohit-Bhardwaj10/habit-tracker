@@ -1,4 +1,6 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ override: true });
+
 import { PrismaClient } from "../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -32,7 +34,8 @@ function createPrismaClient(): PrismaClient {
   }
 
   // Limit pool size to avoid hitting Neon free tier limits during tests
-  const pool = new Pool({ connectionString, max: 5 });
+  // Set connectionTimeoutMillis to 30s to allow Neon databases to wake up from sleep
+  const pool = new Pool({ connectionString, max: 5, connectionTimeoutMillis: 30000 });
   const adapter = new PrismaPg(pool as any); // Type cast to avoid any @types/pg mismatch
   return new PrismaClient({ adapter });
 }

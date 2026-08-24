@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { DateTime } from "luxon";
 import BackfillModal from "./BackfillModal";
-import { api } from "@/lib/api";
 
 type CheckIn = {
   id: string;
@@ -11,133 +11,104 @@ type CheckIn = {
 
 type HistoryCalendarProps = {
   habitId: string;
-  createdAt: string; // ISO string
+  createdAt: string;
   checkIns: CheckIn[];
   userTimezone: string;
   onCheckInSuccess: () => void;
 };
 
-export default function HistoryCalendar({ habitId, createdAt, checkIns, userTimezone, onCheckInSuccess }: HistoryCalendarProps) {
+export default function HistoryCalendar({
+  habitId,
+  createdAt,
+  checkIns,
+  userTimezone,
+  onCheckInSuccess,
+}: HistoryCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const checkInMap = new Set(checkIns.map((c) => c.localDay));
-  
-  // Compute last 90 days in user timezone
-  const days = [];
-  const now = new Date();
-  // Using Intl to get the current date in the user's timezone
-  // A simple hack to subtract days is to subtract 24h, but daylight savings could mess that up.
-  // Instead, we can just use UTC to represent local days securely, since we just need 90 consecutive days ending today.
-  
-  // Format today in user's timezone:
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: userTimezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  
-  const todayStr = formatter.format(now);
-  
-  // Parse todayStr as UTC to do simple math
-  const todayUtc = new Date(`${todayStr}T00:00:00Z`);
-  const createdUtc = new Date(`${formatter.format(new Date(createdAt))}T00:00:00Z`);
+  const checkInMap = useMemo(() => {
+    const map = new Set<string>();
+    checkIns.forEach((c) => map.add(c.localDay));
+    return map;
+  }, [checkIns]);
 
-  for (let i = 364; i >= 0; i--) {
-    const d = new Date(todayUtc.getTime() - i * 86400000);
-    const dayStr = d.toISOString().split("T")[0];
+  const days = useMemo(() => {
+    const result = [];
+    const today = DateTime.now().setZone(userTimezone).startOf("day");
     
-    // Day is valid if it's >= createdDate
-    const isValid = d.getTime() >= createdUtc.getTime();
-    
-    days.push({
-      localDay: dayStr,
-      isCheckedIn: checkInMap.has(dayStr),
-      isValid, // Cannot backfill before creation
-    });
-  }
+    const habitCreatedDate = DateTime.fromISO(createdAt, { zone: userTimezone }).startOf("day");
 
-  async function handleBackfill() {
-    if (!selectedDate) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await api.post(`/habits/${habitId}/checkins`, { localDay: selectedDate });
-      onCheckInSuccess();
-      setSelectedDate(null);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    // 365 days
+    for (let i = 364; i >= 0; i--) {
+      const current = today.minus({ days: i });
+      const localDay = current.toISODate();
+      if (!localDay) continue;
+
+      const isCheckedIn = checkInMap.has(localDay);
+      const isBeforeCreation = current < habitCreatedDate;
+      const isToday = i === 0;
+
+      result.push({
+        date: localDay,
+        isCheckedIn,
+        isBeforeCreation,
+        isToday,
+      });
     }
-  }
+    return result;
+  }, [createdAt, checkIns, userTimezone, checkInMap]);
 
   return (
     <div>
-      <div className="flex gap-2 items-end">
-        {/* Day Labels */}
-        <div className="grid grid-rows-7 gap-1 text-[10px] text-slate-400 font-medium pb-[2px]">
-          <div className="h-4 flex items-center justify-end pr-1"></div>
-          <div className="h-4 flex items-center justify-end pr-1">Mon</div>
-          <div className="h-4 flex items-center justify-end pr-1"></div>
-          <div className="h-4 flex items-center justify-end pr-1">Wed</div>
-          <div className="h-4 flex items-center justify-end pr-1"></div>
-          <div className="h-4 flex items-center justify-end pr-1">Fri</div>
-          <div className="h-4 flex items-center justify-end pr-1"></div>
-        </div>
-        
-        <div className="grid grid-rows-7 grid-flow-col gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {/* Pad start of grid to align correct day of week for the 365th day ago */}
-          {Array.from({ length: new Date(`${days[0].localDay}T00:00:00Z`).getDay() }).map((_, i) => (
-            <div key={`pad-${i}`} className="w-3 h-3 rounded-sm" />
-          ))}
-
+      <div className="flex gap-[4px] overflow-x-auto pb-4 no-scrollbar">
+        <div className="grid grid-rows-7 grid-flow-col gap-[4px] mx-auto min-w-max">
           {days.map((day) => {
-            if (day.isCheckedIn) {
-              return (
-                <div
-                  key={day.localDay}
-                  title={`${day.localDay} - Checked In`}
-                  className="w-3 h-3 rounded-sm bg-emerald-500 border border-emerald-600 shadow-sm"
-                />
-              );
-            }
-
-            if (!day.isValid) {
-              return (
-                <div
-                  key={day.localDay}
-                  title={`${day.localDay} - Before creation`}
-                  className="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200 opacity-50"
-                />
-              );
+            let bgColorClass = "bg-rose-200"; // default empty (missed)
+            let hoverClass = "hover:ring-2 hover:ring-rose-400 cursor-pointer hover:-translate-y-0.5 z-10";
+            
+            if (day.isBeforeCreation) {
+              bgColorClass = "bg-slate-200"; // deeply faded (past)
+              hoverClass = "cursor-not-allowed opacity-60";
+            } else if (day.isCheckedIn) {
+              bgColorClass = "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)]";
+              hoverClass = "cursor-default"; // No hover effect if already checked in
+            } else if (day.isToday) {
+              bgColorClass = "bg-slate-100 ring-1 ring-slate-400";
             }
 
             return (
-              <button
-                key={day.localDay}
-                title={`${day.localDay} - Missed (Click to backfill)`}
-                onClick={() => setSelectedDate(day.localDay)}
-                className="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200 hover:bg-slate-200 hover:border-slate-300 transition-colors"
+              <div
+                key={day.date}
+                title={`${day.date}${day.isCheckedIn ? " - Done" : ""}${day.isBeforeCreation ? " - Before Creation" : ""}`}
+                className={`w-3 h-3 rounded-[3px] transition-all duration-200 relative ${bgColorClass} ${hoverClass}`}
+                onClick={() => {
+                  if (!day.isBeforeCreation && !day.isCheckedIn) {
+                    setSelectedDate(day.date);
+                  }
+                }}
               />
             );
           })}
         </div>
       </div>
 
-      <BackfillModal
-        localDay={selectedDate || ""}
-        isOpen={!!selectedDate}
-        loading={loading}
-        error={error}
-        onClose={() => {
-          setSelectedDate(null);
-          setError(null);
-        }}
-        onConfirm={handleBackfill}
-      />
+      <div className="flex items-center justify-end gap-3 mt-4 text-xs font-semibold text-slate-500">
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-[3px] bg-slate-200 opacity-60"></div> Past</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-[3px] bg-rose-200"></div> Missed</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-[3px] bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)]"></div> Checked In</span>
+      </div>
+
+      {selectedDate && (
+        <BackfillModal
+          habitId={habitId}
+          localDay={selectedDate}
+          onClose={() => setSelectedDate(null)}
+          onConfirm={() => {
+            setSelectedDate(null);
+            onCheckInSuccess();
+          }}
+        />
+      )}
     </div>
   );
 }

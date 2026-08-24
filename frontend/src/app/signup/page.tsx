@@ -1,36 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { Activity } from "lucide-react";
+import gsap from "gsap";
 
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
-  const [timezone, setTimezone] = useState("");
-  const [zones, setZones] = useState<string[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    const supportedZones = Intl.supportedValuesOf("timeZone");
-    setZones(supportedZones);
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || supportedZones[0]);
-  }, []);
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  );
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("accessToken")) {
+      router.push("/dashboard");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    gsap.fromTo(
+      ".auth-anim",
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, stagger: 0.1, duration: 0.8, ease: "power3.out" }
+    );
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const { accessToken } = await api.post("/auth/register", { email, password, timezone });
+      const { accessToken } = await api.post("/auth/register", {
+        email,
+        password,
+        timezone,
+      });
       localStorage.setItem("accessToken", accessToken);
       router.push("/dashboard");
     } catch (err: any) {
@@ -41,77 +52,83 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center text-emerald-600">
-          <Activity size={48} />
+    <div className="min-h-screen bg-[var(--background)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden perspective-1000">
+      {/* Background glow effects */}
+      <div className="absolute top-[0%] left-[-10%] w-[40%] h-[40%] rounded-full bg-rose-300/30 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] rounded-full bg-amber-200/40 blur-[100px] pointer-events-none" />
+
+      <div ref={containerRef} className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="auth-anim flex justify-center text-rose-400">
+          <Activity size={48} className="drop-shadow-[0_0_15px_rgba(244,114,182,0.3)]" />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-          Create a new account
+        <h2 className="auth-anim mt-6 text-center text-3xl font-extrabold text-slate-800">
+          Create an account
         </h2>
-        <p className="mt-2 text-center text-sm text-slate-600">
-          Or{" "}
-          <Link href="/login" className="font-medium text-emerald-600 hover:text-emerald-500">
-            sign in to your existing account
+        <p className="auth-anim mt-2 text-center text-sm text-slate-500 font-medium">
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-rose-500 hover:text-rose-400 transition-colors">
+            Sign in instead
           </Link>
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="auth-anim mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="glass-card py-8 px-4 sm:rounded-2xl sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Email address</label>
-              <div className="mt-1">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              </div>
+              <label className="block text-sm font-semibold text-slate-600 mb-2">Email address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none block w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400 transition-all shadow-sm"
+                placeholder="you@example.com"
+              />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Password</label>
-              <div className="mt-1">
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              </div>
+              <label className="block text-sm font-semibold text-slate-600 mb-2">Password</label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none block w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400 transition-all shadow-sm"
+                placeholder="Min 8 characters"
+              />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Timezone</label>
-              <div className="mt-1">
-                <select
-                  required
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  {zones.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {zone}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <label className="block text-sm font-semibold text-slate-600 mb-2">Timezone</label>
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="appearance-none block w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400 transition-all shadow-sm"
+              >
+                <option value="America/New_York">America/New_York (EST/EDT)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                <option value="UTC">UTC</option>
+              </select>
             </div>
 
-            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {error && (
+              <div className="text-rose-600 text-sm bg-rose-50 border border-rose-200 rounded-lg p-3">
+                {error}
+              </div>
+            )}
 
             <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-70 transition-colors"
+                className="w-full flex justify-center py-3 px-4 rounded-xl shadow-sm text-sm font-bold text-white bg-rose-400 hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 focus:ring-offset-white disabled:opacity-50 transition-all shadow-[0_0_20px_rgba(244,114,182,0.3)] hover:shadow-[0_0_30px_rgba(244,114,182,0.5)] transform hover:-translate-y-0.5"
               >
                 {loading ? "Creating account..." : "Sign up"}
               </button>
