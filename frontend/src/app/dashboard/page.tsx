@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
 import HabitCard from "@/components/HabitCard";
-import { Activity, Plus, Sparkles } from "lucide-react";
+import SkeletonHabitCard from "@/components/SkeletonHabitCard";
+import { Activity, Plus, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
@@ -22,6 +23,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 6;
   
   // New habit form
   const [isCreating, setIsCreating] = useState(false);
@@ -31,11 +35,12 @@ export default function DashboardPage() {
 
   const gridRef = useRef<HTMLDivElement>(null);
 
-  async function fetchHabits(showLoading = true) {
+  async function fetchHabits(showLoading = true, currentPage = page) {
     if (showLoading) setLoading(true);
     try {
-      const data = await api.get("/habits");
+      const data = await api.get(`/habits?page=${currentPage}&limit=${limit}`);
       setHabits(data.habits || []);
+      setTotalPages(data.pagination?.totalPages || 1);
     } catch (error) {
       // API wrapper handles 401 redirect
     } finally {
@@ -44,8 +49,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchHabits(true);
-  }, []);
+    fetchHabits(true, page);
+  }, [page]);
 
   // GSAP animation on habits load
   useEffect(() => {
@@ -85,13 +90,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
-        <Activity className="animate-pulse text-rose-400 drop-shadow-[0_0_15px_rgba(244,114,182,0.5)]" size={48} />
-      </div>
-    );
-  }
+  // Remove early full page loading return to render skeleton instead
 
   return (
     <div className="min-h-screen pt-24 relative bg-[var(--background)]">
@@ -158,7 +157,13 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {habits.length === 0 && !isCreating ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: limit }).map((_, i) => (
+              <SkeletonHabitCard key={`skeleton-${i}`} />
+            ))}
+          </div>
+        ) : habits.length === 0 && !isCreating ? (
           <div className="text-center py-24 glass-card rounded-2xl border-dashed border-2 border-slate-300">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100/60 mb-4 shadow-sm">
               <Activity className="text-rose-400" size={32} />
@@ -176,13 +181,39 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {habits.map((habit) => (
-              <div key={habit.id} className="habit-card-wrapper">
-                <HabitCard habit={habit} onCheckIn={() => fetchHabits(false)} />
+          <>
+            <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {habits.map((habit) => (
+                <div key={habit.id} className="habit-card-wrapper">
+                  <HabitCard habit={habit} onCheckIn={() => fetchHabits(false, page)} />
+                </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-10">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1 || loading}
+                  className="flex items-center gap-1 px-4 py-2 bg-white/60 text-slate-700 font-semibold rounded-xl border border-slate-200/50 hover:bg-white disabled:opacity-50 transition-all shadow-sm"
+                >
+                  <ChevronLeft size={18} />
+                  Prev
+                </button>
+                <span className="text-slate-600 font-medium">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || loading}
+                  className="flex items-center gap-1 px-4 py-2 bg-white/60 text-slate-700 font-semibold rounded-xl border border-slate-200/50 hover:bg-white disabled:opacity-50 transition-all shadow-sm"
+                >
+                  Next
+                  <ChevronRight size={18} />
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
     </div>

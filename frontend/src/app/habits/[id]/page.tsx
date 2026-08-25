@@ -66,8 +66,38 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center bg-[var(--background)]">
-        <Activity className="animate-pulse text-rose-400 drop-shadow-[0_0_15px_rgba(244,114,182,0.5)]" size={48} />
+      <div className="min-h-screen pt-24 relative bg-[var(--background)]">
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 perspective-1000">
+          <div className="inline-flex items-center gap-2 text-slate-300 mb-6 font-semibold w-40 h-6 bg-slate-200/50 rounded animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent relative overflow-hidden">
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+          </div>
+          <div className="detail-anim glass-card rounded-3xl overflow-hidden shadow-xl shadow-slate-200/50 relative overflow-hidden">
+             {/* Shimmer effect for whole card */}
+             <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent z-10 pointer-events-none"></div>
+             
+             <div className="p-8 sm:p-10 border-b border-white/40 bg-white/30">
+               <div className="h-10 bg-slate-200/60 rounded-lg w-1/2 mb-3"></div>
+               <div className="h-6 bg-slate-200/50 rounded-lg w-3/4 mb-10"></div>
+               
+               <div className="flex flex-wrap gap-4 sm:gap-6 mt-10">
+                 {[1, 2, 3].map((i) => (
+                   <div key={i} className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-slate-200 flex-1 min-w-[200px] h-24">
+                     <div className="h-14 w-14 rounded-xl bg-slate-200/60 shrink-0"></div>
+                     <div className="w-full flex flex-col gap-2">
+                       <div className="h-4 bg-slate-200/50 rounded-md w-2/3"></div>
+                       <div className="h-8 bg-slate-200/60 rounded-md w-1/2"></div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+             
+             <div className="p-8 sm:p-10 bg-white/10 h-80 flex flex-col">
+               <div className="h-8 bg-slate-200/60 rounded-lg w-1/3 mb-8"></div>
+               <div className="flex-1 bg-slate-200/40 rounded-2xl"></div>
+             </div>
+          </div>
+        </main>
       </div>
     );
   }

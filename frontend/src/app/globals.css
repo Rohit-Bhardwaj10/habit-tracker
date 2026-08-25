@@ -54,3 +54,9 @@ body {
 .text-glow-pastel {
   text-shadow: 0 0 20px rgba(244, 114, 182, 0.3); /* Rose/Pink subtle glow */
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
